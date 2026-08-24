@@ -40,7 +40,12 @@ jobs:
             expected_arch: aarch64
             upstream: linux_arm64
             upstream_sha256: e4a487ee7ccd7d3a7f7ec08657610aa3606637dab924210b3aee62570fb4b080
-          - runner: macos-13
+          # macos-13 was GitHub's last x64 macOS image and has been retired: a
+          # job requesting it is not rejected, it QUEUES — the v0.1.0 release
+          # sat 15+ minutes with every other bundle green and no error anywhere.
+          # macos-15-intel is the x64 successor; a label that does not exist
+          # fails fast and loudly, which is the failure mode we want here.
+          - runner: macos-15-intel
             platform: darwin-amd64
             expected_arch: x86_64
             upstream: darwin_x64
