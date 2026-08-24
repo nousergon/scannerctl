@@ -48,3 +48,54 @@ jobs:
       - run: python -m json.tool schemas/scan-result-v1.schema.json
       - run: python -m json.tool schemas/routes-v1.schema.json
       - run: test "$(wc -l < provenance/gitleaks-v8.30.1-checksums.txt)" -eq 4
+
+  image:
+    name: image build and canary
+    runs-on: ubuntu-latest
+    # The OCI image was built only by release.yml, on a tag. A change to the
+    # Dockerfile — including a Dependabot base-image bump — therefore reached
+    # `main` with a green tick that had never built it, and would have failed
+    # first at the next release. The blindness is worse than the defects it
+    # hides, so the image is built and exercised on every pull request.
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f
+      - name: Build the image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: scannerctl:ci
+
+      - name: Version is reported from inside the image
+        run: |
+          docker run --rm scannerctl:ci version --format json | tee /tmp/version.json
+          python3 -c "import json,sys; p=json.load(open('/tmp/version.json')); sys.exit(0 if p['schema_version']=='1' and p['runtime_version'] else 1)"
+
+      - name: Both startup canaries pass against the bundled backend and config
+        run: |
+          # The real end-to-end check: benign must be clean and the must-detect
+          # payload must block, using the gitleaks binary and baseline config
+          # baked into the image. A base-image bump that breaks the backend
+          # fails here rather than at the next tag.
+          docker run --rm scannerctl:ci self-test --format json | tee /tmp/selftest.json
+          python3 -c "
+          import json
+          report = json.load(open('/tmp/selftest.json'))
+          assert report['success'] is True, report
+          assert report['benign']['verdict'] == 'clean', report['benign']
+          assert report['must_detect']['verdict'] == 'block', report['must_detect']
+          assert report['must_detect']['rule_ids'], 'block carried no rule evidence'
+          print('canary polarity verified:', report['must_detect']['rule_ids'])
+          "
+
+      - name: A blocking payload is refused with the block exit code
+        run: |
+          printf 'SCANNERCTL_MUST_DETECT_0123456789ABCDEF' > /tmp/payload
+          set +e
+          docker run --rm -v /tmp/payload:/tmp/payload:ro scannerctl:ci scan --input /tmp/payload --format json
+          status=$?
+          set -e
+          test "$status" -eq 10 || { echo "expected exit 10 (block), got $status" >&2; exit 1; }
