@@ -120,7 +120,7 @@ jobs:
         with:
           path: release
           merge-multiple: true
-      - uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
       - name: Sign every bundle and checksum
         run: for artifact in release/*; do cosign sign-blob --yes --bundle "$artifact.sigstore.json" "$artifact"; done
       - uses: actions/attest-build-provenance@96b4a1ef7235a096b17240c259729fdd70c83d45
@@ -158,7 +158,7 @@ jobs:
           tags: |
             ghcr.io/nousergon/scannerctl:${{ github.ref_name }}
             ghcr.io/nousergon/scannerctl:latest
-      - uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb
+      - uses: sigstore/cosign-installer@6f9f17788090df1f26f669e9d70d6ae9567deba6
       - name: Sign OCI index
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
