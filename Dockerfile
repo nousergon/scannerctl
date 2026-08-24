@@ -1,11 +1,11 @@
-FROM python:3.13-slim@sha256:ffb752e139c0a19692a43af8d8523b274222dd68eebad5d583b45c2201c6e30a AS backend
+FROM python:3.14-slim@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4 AS backend
 ARG TARGETARCH
 ARG GITLEAKS_VERSION=8.30.1
 WORKDIR /build
 COPY provenance/gitleaks-v8.30.1-checksums.txt /build/checksums.txt
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates curl && rm -rf /var/lib/apt/lists/* && case "$TARGETARCH" in amd64) asset="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" ;; arm64) asset="gitleaks_${GITLEAKS_VERSION}_linux_arm64.tar.gz" ;; *) echo "unsupported TARGETARCH: $TARGETARCH" >&2; exit 1 ;; esac && curl -fsSLo "$asset" "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$asset" && grep "  $asset$" checksums.txt | sha256sum -c - && tar -xzf "$asset" gitleaks && ./gitleaks version | grep -Fx "$GITLEAKS_VERSION"
 
-FROM python:3.13-slim@sha256:ffb752e139c0a19692a43af8d8523b274222dd68eebad5d583b45c2201c6e30a
+FROM python:3.14-slim@sha256:ce40764625a4ff50df3548277632e7f96c4e77fe75fa848aae9885476e7df5a4
 LABEL org.opencontainers.image.source="https://github.com/nousergon/scannerctl"
 WORKDIR /opt/scannerctl
 COPY . /tmp/scannerctl-source
