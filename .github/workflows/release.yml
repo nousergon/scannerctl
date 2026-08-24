@@ -163,3 +163,46 @@ jobs:
         env:
           DIGEST: ${{ steps.build.outputs.digest }}
         run: cosign sign --yes "ghcr.io/nousergon/scannerctl@$DIGEST"
+
+      # The release "publishes an OCI index" was asserted by the push step
+      # exiting zero, which proves an upload happened and nothing about what a
+      # consumer can resolve. The v0.1.0 index could not be inspected after the
+      # fact — the operator credential lacks `read:packages` — so nothing
+      # outside this job could confirm the index it had just claimed to build.
+      # These three steps assert the published artifact instead.
+      - name: The published index carries both platforms
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          docker buildx imagetools inspect --raw "ghcr.io/nousergon/scannerctl@$DIGEST" > /tmp/index.json
+          cat /tmp/index.json
+          python3 -c "
+          import json
+          index = json.load(open('/tmp/index.json'))
+          platforms = {
+              (m['platform']['os'], m['platform']['architecture'])
+              for m in index.get('manifests', [])
+              if m.get('platform', {}).get('architecture') != 'unknown'
+          }
+          missing = {('linux', 'amd64'), ('linux', 'arm64')} - platforms
+          assert not missing, f'index is missing {missing}; carries {platforms}'
+          print('index platforms:', sorted(platforms))
+          "
+
+      - name: The tag resolves to the digest that was signed
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          # A tag that points somewhere else is how a consumer pinning
+          # :$GITHUB_REF_NAME ends up running an artifact nothing attested.
+          resolved=$(docker buildx imagetools inspect "ghcr.io/nousergon/scannerctl:$GITHUB_REF_NAME" --format '{{.Manifest.Digest}}')
+          test "$resolved" = "$DIGEST" || { echo "tag resolves to $resolved, signed $DIGEST" >&2; exit 1; }
+
+      - name: The signature verifies against this workflow's identity
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: |
+          cosign verify "ghcr.io/nousergon/scannerctl@$DIGEST" \
+            --certificate-identity "https://github.com/$GITHUB_REPOSITORY/.github/workflows/release.yml@$GITHUB_REF" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com > /dev/null
+          echo "signature verified against the release workflow identity"
