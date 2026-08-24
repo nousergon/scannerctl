@@ -63,7 +63,13 @@ def test_backend_maps_crash_timeout_and_missing_binary_to_error(tmp_path):
         FileNotFoundError("missing"),
     ]
     for outcome in errors:
-        def run(*args, **kwargs):
+        # `outcome` is bound as a default: a closure over the loop variable
+        # would read whatever the last iteration left behind.
+        def run(command, *args, outcome=outcome, **kwargs):
+            # Let the version probe succeed, so the failure under test is the
+            # detect call and not a version mismatch short-circuit.
+            if command[1] == "version":
+                return _completed(0, stdout="8.30.1\n")
             if isinstance(outcome, BaseException):
                 raise outcome
             return outcome

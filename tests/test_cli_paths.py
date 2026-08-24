@@ -37,7 +37,8 @@ def _stub_scanner(monkeypatch, verdicts, config, **kwargs):
 
 def test_scan_reads_stdin_and_reports_clean(monkeypatch, config, capsys):
     _stub_scanner(monkeypatch, [("clean", ())], config)
-    monkeypatch.setattr(sys, "stdin", type("S", (), {"buffer": type("B", (), {"read": staticmethod(lambda: b"hello")})()})())
+    stdin = type("S", (), {"buffer": type("B", (), {"read": staticmethod(lambda: b"hello")})()})
+    monkeypatch.setattr(sys, "stdin", stdin())
 
     assert cli.main(["scan", "--input", "-"]) == 0
     payload = json.loads(capsys.readouterr().out)

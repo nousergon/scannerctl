@@ -70,18 +70,16 @@ def test_healthz_is_served_without_scanning():
 def test_unknown_get_path_is_not_found():
     with ProxyServer.for_test(
         scanner=FakeScanner("clean"), routes=_routes(), forwarder=_forwarder
-    ) as server:
-        with pytest.raises(urllib.error.HTTPError) as exc:
-            _get(server, "/nope")
+    ) as server, pytest.raises(urllib.error.HTTPError) as exc:
+        _get(server, "/nope")
     assert exc.value.code == 404
 
 
 def test_metrics_endpoint_is_absent_until_metrics_are_wired():
     with ProxyServer.for_test(
         scanner=FakeScanner("clean"), routes=_routes(), forwarder=_forwarder
-    ) as server:
-        with pytest.raises(urllib.error.HTTPError) as exc:
-            _get(server, "/metrics")
+    ) as server, pytest.raises(urllib.error.HTTPError) as exc:
+        _get(server, "/metrics")
     assert exc.value.code == 404
 
 
@@ -152,9 +150,8 @@ def test_upstream_failure_is_reported_as_bad_gateway():
 
     with ProxyServer.for_test(
         scanner=FakeScanner("clean"), routes=_routes(), forwarder=failing
-    ) as server:
-        with pytest.raises(urllib.error.HTTPError) as exc:
-            _post(server, b'{"hello":"world"}')
+    ) as server, pytest.raises(urllib.error.HTTPError) as exc:
+        _post(server, b'{"hello":"world"}')
     assert exc.value.code == 502
 
 

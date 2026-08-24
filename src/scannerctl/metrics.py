@@ -10,7 +10,7 @@ class Metrics:
     def __init__(self, *, runtime_version: str, config_sha256: str) -> None:
         self.runtime_version = runtime_version
         self.config_sha256 = config_sha256
-        self.counts = {verdict: 0 for verdict in Verdict}
+        self.counts = dict.fromkeys(Verdict, 0)
         self.last_scan = 0.0
         self.last_canary = 0.0
         self.canary_success = 0

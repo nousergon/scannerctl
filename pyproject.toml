@@ -57,3 +57,10 @@ exclude_lines = [
 [tool.ruff]
 line-length = 100
 target-version = "py311"
+
+[tool.ruff.lint]
+# Pinned explicitly rather than left to ruff's default. Upgrading ruff 0.13 ->
+# 0.16 silently widened the default rule set and turned CI red on code that had
+# not changed; what a lint gate enforces should move when we decide it moves,
+# not when a dependency does.
+select = ["E", "F", "W", "I", "B", "SIM", "UP", "C4", "RUF"]
