@@ -10,3 +10,6 @@ dist/
 stage/
 *.tar.gz
 *.sha256
+.coverage
+coverage.xml
+htmlcov/

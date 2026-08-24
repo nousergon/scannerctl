@@ -21,6 +21,7 @@ scannerctl = "scannerctl.cli:main"
 [project.optional-dependencies]
 dev = [
   "pytest==8.4.2",
+  "pytest-cov==7.0.0",
   "ruff==0.13.2",
 ]
 
@@ -31,8 +32,27 @@ package-dir = {"" = "src"}
 where = ["src"]
 
 [tool.pytest.ini_options]
-addopts = "-ra"
+# Coverage is enforced on every run, not reported: repository-baseline-policy.md
+# §4.2 C2 makes a coverage step that prints and passes telemetry, not a gate.
+addopts = "-ra --cov --cov-report=term-missing"
 testpaths = ["tests"]
+
+[tool.coverage.run]
+# §4.2 C1: the denominator is the whole source tree, not the files a test
+# happened to import. `source` makes coverage.py report modules no test loaded;
+# `omit` stays empty so the scope cannot be narrowed into a flattering number.
+source = ["src/scannerctl"]
+omit = []
+
+[tool.coverage.report]
+# §4.2 C3: a ratchet set at the measured value. Raise it when coverage improves;
+# lowering it is a policy amendment, never a way to make a change pass.
+fail_under = 100
+show_missing = true
+exclude_lines = [
+  "pragma: no cover",
+  "if __name__ == .__main__.:",
+]
 
 [tool.ruff]
 line-length = 100
