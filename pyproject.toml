@@ -1,0 +1,59 @@
+[build-system]
+requires = ["setuptools>=78"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "scannerctl"
+version = "0.1.0"
+description = "Provider-neutral DLP scanning and egress enforcement runtime"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "AGPL-3.0-only"
+authors = [{name = "Nous Ergon"}]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+]
+
+[project.scripts]
+scannerctl = "scannerctl.cli:main"
+
+[project.optional-dependencies]
+dev = [
+  "pytest==8.4.2",
+  "pytest-cov==7.0.0",
+  "ruff==0.13.2",
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+# Coverage is enforced on every run, not reported: repository-baseline-policy.md
+# §4.2 C2 makes a coverage step that prints and passes telemetry, not a gate.
+addopts = "-ra --cov --cov-report=term-missing"
+testpaths = ["tests"]
+
+[tool.coverage.run]
+# §4.2 C1: the denominator is the whole source tree, not the files a test
+# happened to import. `source` makes coverage.py report modules no test loaded;
+# `omit` stays empty so the scope cannot be narrowed into a flattering number.
+source = ["src/scannerctl"]
+omit = []
+
+[tool.coverage.report]
+# §4.2 C3: a ratchet set at the measured value. Raise it when coverage improves;
+# lowering it is a policy amendment, never a way to make a change pass.
+fail_under = 100
+show_missing = true
+exclude_lines = [
+  "pragma: no cover",
+  "if __name__ == .__main__.:",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"

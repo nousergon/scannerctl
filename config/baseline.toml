@@ -1,0 +1,10 @@
+title = "scannerctl generic baseline"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "scannerctl-canary"
+description = "Startup must-detect canary"
+regex = '''SCANNERCTL_MUST_DETECT_[A-Z0-9]{16}'''
+keywords = ["SCANNERCTL_MUST_DETECT_"]
