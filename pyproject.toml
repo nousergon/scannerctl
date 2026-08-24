@@ -20,7 +20,7 @@ scannerctl = "scannerctl.cli:main"
 
 [project.optional-dependencies]
 dev = [
-  "pytest==8.4.2",
+  "pytest==9.0.3",
   "pytest-cov==7.1.0",
   "ruff==0.13.2",
 ]
