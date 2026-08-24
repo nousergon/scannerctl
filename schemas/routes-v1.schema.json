@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nousergon/scannerctl/schemas/routes-v1.schema.json",
+  "title": "scannerctl route table v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "routes"],
+  "properties": {
+    "schema_version": {"const": "1"},
+    "routes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["host", "upstream"],
+        "properties": {
+          "host": {"type": "string", "minLength": 1},
+          "upstream": {"type": "string", "pattern": "^https://"},
+          "auth_env": {"type": "string"},
+          "auth_header": {"type": "string"},
+          "auth_prefix": {"type": "string"}
+        }
+      }
+    }
+  }
+}

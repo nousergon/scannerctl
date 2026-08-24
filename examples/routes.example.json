@@ -1,0 +1,12 @@
+{
+  "schema_version": "1",
+  "routes": [
+    {
+      "host": "provider.example",
+      "upstream": "https://api.provider.example",
+      "auth_env": "PROVIDER_API_KEY",
+      "auth_header": "Authorization",
+      "auth_prefix": "Bearer "
+    }
+  ]
+}
