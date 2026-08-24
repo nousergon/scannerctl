@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 import re
 from dataclasses import asdict, dataclass, field
-from enum import Enum
+from enum import StrEnum
 
 
-class Verdict(str, Enum):
+class Verdict(StrEnum):
     CLEAN = "clean"
     BLOCK = "block"
     ERROR = "error"
@@ -32,7 +32,7 @@ class ScanResult:
         return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
     @classmethod
-    def from_json(cls, value: str) -> "ScanResult":
+    def from_json(cls, value: str) -> ScanResult:
         payload = json.loads(value)
         if not isinstance(payload, dict):
             raise ValueError("result must be an object")

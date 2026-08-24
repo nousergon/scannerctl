@@ -58,9 +58,8 @@ def test_every_non_clean_state_denies_without_forwarding(verdict):
         scanner=FakeScanner(verdict),
         routes=RouteTable([Route("tenant.test", "https://upstream.test")]),
         forwarder=forward,
-    ) as server:
-        with pytest.raises(urllib.error.HTTPError) as exc:
-            _request(server)
+    ) as server, pytest.raises(urllib.error.HTTPError) as exc:
+        _request(server)
     assert exc.value.code in (403, 503)
     assert forward.calls == []
 
@@ -71,9 +70,8 @@ def test_unknown_host_is_denied():
         scanner=FakeScanner("clean"),
         routes=RouteTable([]),
         forwarder=forward,
-    ) as server:
-        with pytest.raises(urllib.error.HTTPError) as exc:
-            _request(server)
+    ) as server, pytest.raises(urllib.error.HTTPError) as exc:
+        _request(server)
     assert exc.value.code == 421
     assert forward.calls == []
 

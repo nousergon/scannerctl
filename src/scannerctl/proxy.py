@@ -4,11 +4,11 @@ import json
 import os
 import threading
 import urllib.request
-from urllib.parse import urlparse
+from collections.abc import Callable
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import Callable
+from urllib.parse import urlparse
 
 from scannerctl.contract import Verdict
 
@@ -38,7 +38,7 @@ class RouteTable:
         return self._routes.get(host.partition(":")[0].lower())
 
     @classmethod
-    def from_json(cls, path: str | Path) -> "RouteTable":
+    def from_json(cls, path: str | Path) -> RouteTable:
         payload = json.loads(Path(path).read_text())
         if payload.get("schema_version") != "1":
             raise ValueError("unsupported route schema_version")
