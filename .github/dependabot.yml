@@ -10,6 +10,17 @@ updates:
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    groups:
+      # `github/codeql-action/init` and `.../analyze` are subpaths of one
+      # action repo whose versions MUST match — `init` stamps its version into
+      # the config file `analyze` reads, and a skew is a hard configuration
+      # error. Dependabot bumps each subpath as its own dependency, so without
+      # this group it opens a PR moving one and leaves the other behind, which
+      # is exactly what scannerctl-PR19 did (CodeQL: "Loaded a configuration
+      # file for version '3.37.8', but running version '4.37.8'").
+      codeql-action:
+        patterns:
+          - "github/codeql-action*"
   - package-ecosystem: docker
     directory: /
     schedule:

@@ -19,7 +19,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: github/codeql-action/init@6d786de4d6f3531a740e445b53a42b622bbbace8
+      # github/codeql-action is ONE action family in ONE repo: `init` writes a
+      # config file stamped with its own version and `analyze` reads it, so a
+      # version skew between them is a hard `configuration error`, not a
+      # degraded scan. Dependabot treats each subpath as a SEPARATE dependency
+      # and will happily bump one — scannerctl-PR19 moved `analyze` to v4.37.8
+      # while `init` stayed on v3.37.8 and CodeQL failed with "Loaded a
+      # configuration file for version '3.37.8', but running version '4.37.8'".
+      # The `github-actions.codeql-action` group in .github/dependabot.yml is
+      # what keeps them in one PR from now on; these two lines must always
+      # carry the SAME sha.
+      #
+      # The prior `init` pin (6d786de4d6f3531a740e445b53a42b622bbbace8) did not
+      # resolve to any commit in github/codeql-action — `GET /repos/github/
+      # codeql-action/commits/6d786de...` returned 422 "No commit found",
+      # measured 2026-08-25. A pin nobody can resolve is not an auditable pin,
+      # which is the entire point of pinning by sha (`policy-scm-platform`).
+      # Both lines below are the dereferenced v4.37.8 annotated tag.
+      - uses: github/codeql-action/init@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28  # v4.37.8
         with:
           languages: python
-      - uses: github/codeql-action/analyze@42947a340483f03ba47bb1a039b2c519aab3df85
+      - uses: github/codeql-action/analyze@db488ddef3bf6cb639b32c2e9a7c0a7ea8271d28  # v4.37.8
