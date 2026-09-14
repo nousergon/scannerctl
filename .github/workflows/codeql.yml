@@ -36,7 +36,7 @@ jobs:
       # measured 2026-08-25. A pin nobody can resolve is not an auditable pin,
       # which is the entire point of pinning by sha (`policy-scm-platform`).
       # Both lines below are the dereferenced v4.37.8 annotated tag.
-      - uses: github/codeql-action/init@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4.37.9
+      - uses: github/codeql-action/init@b96794f015dfd88f77b49b1c93e0fa7110f94c63  # v4.38.0
         with:
           languages: python
-      - uses: github/codeql-action/analyze@cdf488f595d80d6e07e03d4674febd5ab45fa938  # v4.37.9
+      - uses: github/codeql-action/analyze@b96794f015dfd88f77b49b1c93e0fa7110f94c63  # v4.38.0
