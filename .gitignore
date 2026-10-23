@@ -13,3 +13,8 @@ stage/
 .coverage
 coverage.xml
 htmlcov/
+
+# Agent-instruction files stay local in public repos
+# (alpha-engine-config-I8249; config#2581 near-incident class).
+CLAUDE.md
+AGENTS.md
