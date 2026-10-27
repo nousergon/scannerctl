@@ -1,0 +1,58 @@
+name: pip-audit
+
+# Blocking dependency-vulnerability gate on scannerctl's declared Python
+# dependencies. Modelled on nousergon-lib's and krepis's pip-audit.yml (fleet
+# pip-audit standardization, alpha-engine-config#2530); closes the conformance
+# finding alpha-engine-config#9481 (policy `pip-audit-blocking`).
+#
+# Blocking means blocking: no `continue-on-error`, no `|| true`. A finding with
+# no fix release is handled with `--ignore-vuln <ID>` on the invocation and a
+# dated reason comment beside it, never by softening the step.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  merge_group:
+    types: [checks_requested]
+  schedule:
+    # Daily at 14:00 UTC, the fleet cadence: advisories publish on a rolling
+    # basis, so an unchanged tree can turn red between pushes.
+    - cron: "0 14 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    name: pip-audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0
+        with:
+          python-version: "3.13"
+
+      - name: Install pip-audit
+        run: python -m pip install --disable-pip-version-check pip-audit
+
+      - name: Audit runtime dependencies
+        # `pip-audit .` audits the base `dependencies` of pyproject.toml — what
+        # the published package and the OCI image install. scannerctl declares
+        # none today, so this is the guard that makes the first one audited.
+        run: pip-audit --strict .
+
+      - name: Audit pinned dev toolchain
+        # The `dev` extra is the only declared dependency set with content, and
+        # `pip-audit .` does not read extras. Audit it as a requirements file
+        # (transitives resolved) so a vulnerable test/lint pin fails here too.
+        run: |
+          python - <<'PY' > "$RUNNER_TEMP/dev-requirements.txt"
+          import tomllib
+          with open("pyproject.toml", "rb") as fh:
+              extras = tomllib.load(fh)["project"]["optional-dependencies"]
+          print("\n".join(extras["dev"]))
+          PY
+          cat "$RUNNER_TEMP/dev-requirements.txt"
+          pip-audit --strict -r "$RUNNER_TEMP/dev-requirements.txt"
