@@ -20,3 +20,13 @@ def test_metrics_record_verdict_and_canary():
     assert 'scannerctl_scan_total{verdict="block"} 1' in text
     assert "scannerctl_startup_canary_success 1" in text
     assert "scannerctl_last_scan_timestamp_seconds 0" not in text
+
+
+def test_metrics_render_every_denial_reason_from_zero():
+    metrics = Metrics(runtime_version="1.0.0", config_sha256="a" * 64)
+    metrics.deny("too_large")
+    text = metrics.render()
+
+    assert 'scannerctl_request_denied_total{reason="too_large"} 1' in text
+    assert 'scannerctl_request_denied_total{reason="length_required"} 0' in text
+    assert 'scannerctl_request_denied_total{reason="unsupported_content_encoding"} 0' in text
