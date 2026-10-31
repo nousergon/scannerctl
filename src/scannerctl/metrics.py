@@ -5,12 +5,22 @@ import time
 
 from scannerctl.contract import Verdict
 
+# Requests the proxy refuses before any scan runs. Each is rendered from zero
+# so a consumer can tell "never happened" from "not exported".
+DENIAL_REASONS = (
+    "ambiguous_framing",
+    "unsupported_content_encoding",
+    "length_required",
+    "too_large",
+)
+
 
 class Metrics:
     def __init__(self, *, runtime_version: str, config_sha256: str) -> None:
         self.runtime_version = runtime_version
         self.config_sha256 = config_sha256
         self.counts = dict.fromkeys(Verdict, 0)
+        self.denials = dict.fromkeys(DENIAL_REASONS, 0)
         self.last_scan = 0.0
         self.last_canary = 0.0
         self.canary_success = 0
@@ -25,6 +35,10 @@ class Metrics:
             self.bytes_total += bytes_scanned
             self.last_scan = time.time()
 
+    def deny(self, reason: str) -> None:
+        with self._lock:
+            self.denials[reason] += 1
+
     def set_canary(self, *, success: bool) -> None:
         with self._lock:
             self.canary_success = int(success)
@@ -37,6 +51,11 @@ class Metrics:
                 *[
                     f'scannerctl_scan_total{{verdict="{v.value}"}} {self.counts[v]}'
                     for v in Verdict
+                ],
+                "# TYPE scannerctl_request_denied_total counter",
+                *[
+                    f'scannerctl_request_denied_total{{reason="{r}"}} {self.denials[r]}'
+                    for r in DENIAL_REASONS
                 ],
                 f"scannerctl_scan_duration_milliseconds_total {self.duration_ms_total}",
                 f"scannerctl_scan_bytes_total {self.bytes_total}",

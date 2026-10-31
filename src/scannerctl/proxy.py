@@ -45,6 +45,27 @@ class RouteTable:
         return cls([Route(**item) for item in payload.get("routes", [])])
 
 
+def _representation_denial(headers) -> str:
+    """Return a denial reason unless the request body is scannable as sent.
+
+    The scanner inspects the bytes it is given. A body under a non-identity
+    Content-Encoding would be inspected in its encoded form, where a
+    must-detect pattern is invisible, and then forwarded with the encoding
+    intact for the upstream to decode (scannerctl-I68). Transfer-Encoding
+    alongside Content-Length is ambiguous framing: the bytes read here are not
+    the bytes the upstream would parse. Both are refused before scanning,
+    rather than decoded, so the proxy never forwards a representation other
+    than the one it inspected.
+    """
+    if headers.get_all("Transfer-Encoding"):
+        return "ambiguous_framing"
+    for value in headers.get_all("Content-Encoding") or ():
+        for coding in value.split(","):
+            if coding.strip().lower() not in {"", "identity"}:
+                return "unsupported_content_encoding"
+    return ""
+
+
 class _NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None
@@ -136,12 +157,19 @@ class _Handler(BaseHTTPRequestHandler):
         self._respond(404, b"not found")
 
     def do_POST(self):
+        denial = _representation_denial(self.headers)
+        if denial:
+            self._deny(denial)
+            self._respond(415, b'{"verdict":"unsupported"}', "application/json")
+            return
         length = self.headers.get("Content-Length")
         if length is None or not length.isdigit():
+            self._deny("length_required")
             self._respond(411, b"content-length required")
             return
         size = int(length)
         if size > self.server.max_body_bytes:
+            self._deny("too_large")
             self._respond(413, b"request too large")
             return
         body = self.rfile.read(size)
@@ -176,6 +204,10 @@ class _Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(response_body)))
         self.end_headers()
         self.wfile.write(response_body)
+
+    def _deny(self, reason: str) -> None:
+        if self.server.metrics is not None:
+            self.server.metrics.deny(reason)
 
     def _respond(self, status: int, body: bytes, content_type="text/plain"):
         self.send_response(status)
