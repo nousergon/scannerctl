@@ -23,6 +23,7 @@ dev = [
   "pytest==9.2.0",
   "pytest-cov==7.1.0",
   "ruff==0.17.3",
+  "basedpyright==1.40.2",
 ]
 
 [tool.setuptools]
@@ -64,3 +65,26 @@ target-version = "py311"
 # not changed; what a lint gate enforces should move when we decide it moves,
 # not when a dependency does.
 select = ["E", "F", "W", "I", "B", "SIM", "UP", "C4", "RUF"]
+
+[tool.basedpyright]
+# Strict typing gate (fleet strict-typing rollout, alpha-engine-config-I12607).
+# CI runs it as a BLOCKING step in the existing test job.
+#
+# `.basedpyright/baseline.json` records the errors that existed when the gate was
+# switched on. basedpyright ignores exactly those and fails on any NEW error, so
+# every new or changed line is held to strict from day one. The baseline shrinks
+# as old errors are fixed; CI refuses a PR that grows any rule's count. Never
+# regenerate it (`--writebaseline`) to get a PR green: fix the code, or suppress
+# one line with `# pyright: ignore[<rule>]` and say why.
+include = ["src/scannerctl", "scripts"]
+# Analysed at the declared floor, where version-specific syntax regressions bite.
+pythonVersion = "3.11"
+typeCheckingMode = "strict"
+# Strict mode does not flag an explicit `Any`; this does. A needed `Any` (an
+# untyped SDK object, raw JSON) gets a line-level ignore with a reason.
+reportExplicitAny = "error"
+# A bare `# type: ignore` silences every rule on the line; only rule-scoped
+# `# pyright: ignore[rule]` comments are honoured.
+enableTypeIgnoreComments = false
+reportIgnoreCommentWithoutRule = "error"
+reportUnnecessaryTypeIgnoreComment = "error"
