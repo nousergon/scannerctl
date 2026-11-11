@@ -4,10 +4,12 @@ import argparse
 import json
 import os
 import sys
+from collections.abc import Sequence
 from pathlib import Path
 
 from scannerctl import __version__
 from scannerctl.backend import GitleaksBackend
+from scannerctl.contract import ScanResult
 from scannerctl.metrics import Metrics
 from scannerctl.proxy import ProxyServer, RouteTable
 from scannerctl.runtime import Scanner
@@ -31,7 +33,7 @@ def _defaults() -> tuple[Path, Path]:
     return gitleaks, config
 
 
-def _scanner(args) -> Scanner:
+def _scanner(args: argparse.Namespace) -> Scanner:
     default_binary, default_config = _defaults()
     config = Path(args.config or default_config)
     backend = GitleaksBackend(
@@ -47,7 +49,7 @@ def _scanner(args) -> Scanner:
     )
 
 
-def _scan_file(args):
+def _scan_file(args: argparse.Namespace) -> ScanResult:
     payload = (
         sys.stdin.buffer.read()
         if args.input == "-"
@@ -91,7 +93,7 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def main(argv=None) -> int:
+def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     if args.command == "version":
         print(json.dumps({"schema_version": "1", "runtime_version": __version__}))
